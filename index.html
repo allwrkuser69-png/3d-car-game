@@ -163,17 +163,17 @@ function update(dt){
  speed=Math.max(0,Math.min(48,speed));
  let steer=(keys.a||keys.ArrowLeft?-1:0)+(keys.d||keys.ArrowRight?1:0);
  const turn=steer*(0.65+speed/70)*dt;
- playerAngle+=turn;
+ playerAngle+=(speed/Math.max(1,midR))*0.9*dt + turn;
+ if(brake&&!throttle) playerAngle-=(Math.min(speed,18)/Math.max(1,midR))*0.35*dt;
  const radius=midR+(keys.a||keys.d||keys.ArrowLeft||keys.ArrowRight?0:0);
  const p=posOnTrack(playerAngle,radius);
  player.position.x+= (p.x-player.position.x)*Math.min(1,dt*6);
  player.position.z+= (p.z-player.position.z)*Math.min(1,dt*6);
  player.rotation.y=-playerAngle;
  if(!onRoad(player.position.x,player.position.z)){speed*=.985}
- const diff=Math.abs(norm(playerAngle-lastAngle));
- if(diff<Math.PI){if(lastAngle>2 && playerAngle<-2)lap++; if(lastAngle<-2 && playerAngle>2)lap++}
- lastAngle=playerAngle;
+ lap=Math.floor((playerAngle+Math.PI/2)/(Math.PI*2))+1;
  if(lap>3){finishPosition=1;endRace();return}
+ lastAngle=playerAngle;
  // AI
  ais.forEach((a,i)=>{
    a.angle+=dt*(0.31+i*.018);
