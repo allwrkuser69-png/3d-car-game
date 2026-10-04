@@ -1,22 +1,212 @@
-<!doctype html><html><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>3D Car Racer</title><style>*{box-sizing:border-box}html,body{margin:0;height:100%;overflow:hidden;font-family:Arial;background:#111}#ui{position:fixed;z-index:2;top:15px;left:15px;color:white;background:#0009;padding:12px 16px;border-radius:12px;line-height:1.7}#start{position:fixed;inset:0;z-index:3;display:grid;place-items:center;background:#06101dcc;color:white;text-align:center}.box{background:#111e;padding:35px;border-radius:22px;border:1px solid #ffffff33}button{padding:13px 24px;border:0;border-radius:10px;font-weight:bold;cursor:pointer}</style></head><body><div id="ui">SPEED: <b id="sp">0</b> km/h<br>LAP: <b id="lap">1</b>/3<br><small>WASD / Arrow Keys • R Reset</small></div><div id="start"><div class="box"><h1>🏎️ 3D CAR RACER</h1><p>Drive around the track and complete 3 laps.</p><button onclick="startGame()">START GAME</button></div></div><script type="module">
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no">
+<title>3D Car Racer</title>
+<style>
+*{box-sizing:border-box}html,body{margin:0;height:100%;overflow:hidden;font-family:Arial,sans-serif;background:#111}
+#ui{position:fixed;z-index:5;top:12px;left:12px;color:#fff;background:#0009;padding:10px 14px;border-radius:14px;line-height:1.55;backdrop-filter:blur(5px);font-size:14px}
+#buttons{position:fixed;z-index:6;top:12px;right:12px;display:flex;gap:7px;flex-wrap:wrap;justify-content:flex-end}
+button{border:0;border-radius:11px;padding:10px 14px;font-weight:700;cursor:pointer;background:#fff;color:#111;box-shadow:0 3px 10px #0005}
+#start{position:fixed;inset:0;z-index:10;display:grid;place-items:center;background:#07101dcc;color:#fff;text-align:center}
+.box{background:#111e;padding:30px;max-width:430px;border-radius:24px;border:1px solid #ffffff33;box-shadow:0 20px 60px #0008}
+.box h1{font-size:34px;margin:0 0 10px}.box p{opacity:.85}
+#mobile{position:fixed;z-index:7;bottom:18px;left:0;right:0;display:flex;justify-content:space-between;padding:0 18px;pointer-events:none}
+.pad{display:flex;gap:10px;pointer-events:auto}.ctrl{width:64px;height:64px;border-radius:50%;font-size:25px;padding:0;background:#ffffffcc}
+#count{position:fixed;inset:0;z-index:9;display:none;place-items:center;color:#fff;font-size:90px;font-weight:900;text-shadow:0 4px 20px #000}
+@media(min-width:800px){#mobile{display:none}}
+</style>
+</head>
+<body>
+<div id="ui">
+<b>🏁 3D CAR RACER</b><br>
+SPEED: <b id="sp">0</b> km/h<br>
+LAP: <b id="lap">1</b>/3<br>
+POS: <b id="pos">1</b>/4<br>
+TIME: <b id="time">0.0</b>s<br>
+<small>WASD / Arrow Keys • R Reset</small>
+</div>
+<div id="buttons">
+<button id="soundBtn">🔊 Sound ON</button><button id="nightBtn">🌙 Night</button>
+</div>
+<div id="start"><div class="box">
+<h1 id="title">🏎️ 3D CAR RACER</h1>
+<p id="msg">Race 3 laps against AI cars. Stay on the track, avoid crashes and finish first!</p>
+<button id="startBtn">START RACE</button>
+</div></div>
+<div id="count">3</div>
+<div id="mobile">
+<div class="pad"><button class="ctrl" data-key="a">◀</button><button class="ctrl" data-key="d">▶</button></div>
+<div class="pad"><button class="ctrl" data-key="s">▼</button><button class="ctrl" data-key="w">▲</button></div>
+</div>
+
+<script type="module">
 import * as THREE from 'https://cdn.jsdelivr.net/npm/three@0.170.0/build/three.module.js';
-const scene=new THREE.Scene();scene.background=new THREE.Color(0x87b8dc);scene.fog=new THREE.Fog(0x87b8dc,80,350);
-const camera=new THREE.PerspectiveCamera(60,innerWidth/innerHeight,.1,1000);
-const renderer=new THREE.WebGLRenderer({antialias:true});renderer.setSize(innerWidth,innerHeight);renderer.setPixelRatio(Math.min(devicePixelRatio,2));renderer.shadowMap.enabled=true;document.body.appendChild(renderer.domElement);
-scene.add(new THREE.HemisphereLight(0xddeeff,0x335522,2));
-const sun=new THREE.DirectionalLight(0xffffff,3);sun.position.set(-50,80,40);sun.castShadow=true;scene.add(sun);
-const ground=new THREE.Mesh(new THREE.PlaneGeometry(700,700),new THREE.MeshStandardMaterial({color:0x39743b}));ground.rotation.x=-Math.PI/2;scene.add(ground);
-const roadMat=new THREE.MeshStandardMaterial({color:0x282b31});
-const road=new THREE.Mesh(new THREE.PlaneGeometry(22,320),roadMat);road.rotation.x=-Math.PI/2;road.position.y=.02;scene.add(road);
-const lineMat=new THREE.MeshStandardMaterial({color:0xffffff});
-for(let z=-155;z<160;z+=10){let l=new THREE.Mesh(new THREE.BoxGeometry(.18,.03,5),lineMat);l.position.set(0,.06,z);scene.add(l)}
-function cube(w,h,d,c,x,y,z){let m=new THREE.Mesh(new THREE.BoxGeometry(w,h,d),new THREE.MeshStandardMaterial({color:c}));m.position.set(x,y,z);m.castShadow=true;m.receiveShadow=true;scene.add(m);return m}
-for(let z=-155;z<160;z+=14){cube(1,1,1.5,0x8b4f2b,-15,0.5,z);cube(1,1,1.5,0x8b4f2b,15,0.5,z);let a=cube(4,7,4,0x24652f,-15,4,z+2);a.geometry=new THREE.ConeGeometry(4,7,8);let b=cube(4,7,4,0x24652f,15,4,z+2);b.geometry=new THREE.ConeGeometry(4,7,8)}
-function car(color){let g=new THREE.Group();let b=new THREE.Mesh(new THREE.BoxGeometry(2.2,.55,4.2),new THREE.MeshStandardMaterial({color}));b.position.y=.8;g.add(b);let c=new THREE.Mesh(new THREE.BoxGeometry(1.65,.8,1.8),new THREE.MeshStandardMaterial({color:0x17283a,roughness:.2}));c.position.set(0,1.35,.5);g.add(c);for(let x of[-1.18,1.18])for(let z of[-1.35,1.35]){let w=new THREE.Mesh(new THREE.CylinderGeometry(.45,.45,.3,18),new THREE.MeshStandardMaterial({color:0x111111}));w.rotation.z=Math.PI/2;w.position.set(x,.5,z);g.add(w)}return g}
-const player=car(0xe53935);player.position.set(0,0,120);scene.add(player);
-let keys={},speed=0,lap=1,playing=false;addEventListener('keydown',e=>{keys[e.key.toLowerCase()]=true;keys[e.key]=true;if(e.key.toLowerCase()==='r')reset()});addEventListener('keyup',e=>{keys[e.key.toLowerCase()]=false;keys[e.key]=false});
-function reset(){player.position.set(0,0,120);speed=0;lap=1;playing=true;document.getElementById('start').style.display='none'}
-window.startGame=()=>reset();
-const clock=new THREE.Clock();function loop(){requestAnimationFrame(loop);let dt=Math.min(clock.getDelta(),.035);if(playing){if(keys.w||keys.ArrowUp)speed+=25*dt;else speed-=8*dt;if(keys.s||keys.ArrowDown)speed-=30*dt;speed=Math.max(0,Math.min(45,speed));let steer=(keys.a||keys.ArrowLeft?-1:0)+(keys.d||keys.ArrowRight?1:0);player.position.x+=steer*speed*.055*dt;player.position.x=Math.max(-8,Math.min(8,player.position.x));player.position.z-=speed*dt;if(player.position.z<-158){lap++;player.position.z=158}if(lap>3){playing=false;document.getElementById('start').style.display='grid';document.querySelector('#start h1').textContent='🏆 RACE COMPLETE!'}document.getElementById('sp').textContent=Math.round(speed*3.6);document.getElementById('lap').textContent=Math.min(lap,3);camera.position.lerp(new THREE.Vector3(player.position.x,5,player.position.z+9),.08);camera.lookAt(player.position.x,1,player.position.z-8)}renderer.render(scene,camera)}loop();
+
+const scene=new THREE.Scene();
+scene.background=new THREE.Color(0x79aeda);
+scene.fog=new THREE.Fog(0x79aeda,80,260);
+const camera=new THREE.PerspectiveCamera(60,innerWidth/innerHeight,.1,700);
+const renderer=new THREE.WebGLRenderer({antialias:true});
+renderer.setSize(innerWidth,innerHeight); renderer.setPixelRatio(Math.min(devicePixelRatio,2));
+renderer.shadowMap.enabled=true; document.body.appendChild(renderer.domElement);
+
+const hemi=new THREE.HemisphereLight(0xddeeff,0x285026,2.1);scene.add(hemi);
+const sun=new THREE.DirectionalLight(0xffffff,3);sun.position.set(-60,100,30);sun.castShadow=true;scene.add(sun);
+
+const ground=new THREE.Mesh(new THREE.PlaneGeometry(500,500),new THREE.MeshStandardMaterial({color:0x34733a}));
+ground.rotation.x=-Math.PI/2;ground.receiveShadow=true;scene.add(ground);
+
+const outerR=68,innerR=45,midR=(outerR+innerR)/2,rx=1,rz=1.18;
+const road=new THREE.Mesh(new THREE.RingGeometry(innerR,outerR,128),new THREE.MeshStandardMaterial({color:0x292c32,roughness:.95}));
+road.rotation.x=-Math.PI/2;road.scale.set(rx,rz,1);road.position.y=.03;road.receiveShadow=true;scene.add(road);
+
+const curbMat=new THREE.MeshStandardMaterial({color:0xe9e9e9});
+for(let i=0;i<128;i+=2){
+  const a=i/128*Math.PI*2;
+  const r=outerR+.7;
+  const x=Math.cos(a)*r*rx,z=Math.sin(a)*r*rz;
+  const c=new THREE.Mesh(new THREE.BoxGeometry(1.5,.16,3.0),curbMat);
+  c.position.set(x,.09,z);c.rotation.y=-a;c.castShadow=true;scene.add(c);
+}
+const innerGrass=new THREE.Mesh(new THREE.CircleGeometry(innerR,96),new THREE.MeshStandardMaterial({color:0x3e813d}));
+innerGrass.rotation.x=-Math.PI/2;innerGrass.scale.set(rx,rz,1);innerGrass.position.y=.045;scene.add(innerGrass);
+
+function cone(x,z,s=1){
+  const g=new THREE.Group();
+  const trunk=new THREE.Mesh(new THREE.CylinderGeometry(.35,.5,2,8),new THREE.MeshStandardMaterial({color:0x744522}));
+  trunk.position.y=1;g.add(trunk);
+  const top=new THREE.Mesh(new THREE.ConeGeometry(2.4*s,5*s,8),new THREE.MeshStandardMaterial({color:0x17642d}));
+  top.position.y=4;g.add(top);g.position.set(x,0,z);g.traverse(o=>{if(o.isMesh)o.castShadow=true});scene.add(g);
+}
+for(let i=0;i<24;i++){let a=i/24*Math.PI*2;cone(Math.cos(a)*(outerR+11),Math.sin(a)*(outerR+11)*rz,.8+Math.random()*.35)}
+
+function car(color){
+  const g=new THREE.Group();
+  const body=new THREE.Mesh(new THREE.BoxGeometry(2.4,.62,4.5),new THREE.MeshStandardMaterial({color,metalness:.15,roughness:.5}));
+  body.position.y=.82;body.castShadow=true;g.add(body);
+  const cabin=new THREE.Mesh(new THREE.BoxGeometry(1.75,.82,1.9),new THREE.MeshStandardMaterial({color:0x172638,metalness:.1,roughness:.18}));
+  cabin.position.set(0,1.38,.35);cabin.castShadow=true;g.add(cabin);
+  const bumper=new THREE.Mesh(new THREE.BoxGeometry(2.45,.25,.25),new THREE.MeshStandardMaterial({color:0x111111}));
+  bumper.position.set(0,.62,-2.18);g.add(bumper);
+  for(const x of[-1.3,1.3])for(const z of[-1.45,1.45]){
+    const w=new THREE.Mesh(new THREE.CylinderGeometry(.46,.46,.34,18),new THREE.MeshStandardMaterial({color:0x101010}));
+    w.rotation.z=Math.PI/2;w.position.set(x,.5,z);w.castShadow=true;g.add(w);
+  }
+  return g;
+}
+
+const player=car(0xe53935);scene.add(player);
+const aiColors=[0x1e88e5,0xffc107,0x8e44ad];
+const ais=aiColors.map((c,i)=>{const g=car(c);scene.add(g);return {g,angle:-Math.PI/2-(i+1)*.12,speed:0.0000,lap:1,finished:false}});
+
+let keys={},playing=false,counting=false,night=false,soundOn=true;
+let speed=0,lap=1,totalTime=0,playerAngle=-Math.PI/2,lastAngle=playerAngle,finished=false,finishPosition=1;
+let audioCtx=null,engineOsc=null;
+
+function setupAudio(){
+ if(!soundOn)return;
+ if(!audioCtx)audioCtx=new (window.AudioContext||window.webkitAudioContext)();
+ if(audioCtx.state==='suspended')audioCtx.resume();
+ if(!engineOsc){engineOsc=audioCtx.createOscillator();const gain=audioCtx.createGain();engineOsc.type='sawtooth';gain.gain.value=.015;engineOsc.connect(gain).connect(audioCtx.destination);engineOsc.start();engineOsc.gain=gain}
+}
+function beep(freq,dur=.12){
+ if(!soundOn)return;setupAudio();const o=audioCtx.createOscillator(),g=audioCtx.createGain();o.frequency.value=freq;g.gain.value=.06;o.connect(g).connect(audioCtx.destination);o.start();g.gain.exponentialRampToValueAtTime(.001,audioCtx.currentTime+dur);o.stop(audioCtx.currentTime+dur);
+}
+function setNight(){
+ night=!night;
+ scene.background.set(night?0x07132b:0x79aeda);scene.fog.color.set(night?0x07132b:0x79aeda);
+ hemi.intensity=night?0.65:2.1;sun.intensity=night?0.8:3;
+ document.getElementById('nightBtn').textContent=night?'☀️ Day':'🌙 Night';
+}
+
+function posOnTrack(a,r=midR){
+ return new THREE.Vector3(Math.cos(a)*r*rx,0,Math.sin(a)*r*rz);
+}
+function angleOf(x,z){return Math.atan2(z/rz,x/rx)}
+function norm(a){while(a>Math.PI)a-=Math.PI*2;while(a<-Math.PI)a+=Math.PI*2;return a}
+function onRoad(x,z){
+ const d=Math.sqrt((x*x)/(rx*rx)+(z*z)/(rz*rz));
+ return d>innerR-2 && d<outerR+2;
+}
+function resetPositions(){
+ playerAngle=-Math.PI/2;lastAngle=playerAngle;lap=1;speed=0;totalTime=0;finished=false;finishPosition=1;
+ player.position.copy(posOnTrack(playerAngle));player.rotation.y=0;
+ ais.forEach((a,i)=>{a.angle=-Math.PI/2-(i+1)*.13;a.lap=1;a.finished=false;a.g.position.copy(posOnTrack(a.angle,midR-2+i*1.5));a.g.rotation.y=0});
+ document.getElementById('lap').textContent='1';document.getElementById('pos').textContent='1';
+}
+function countdown(){
+ counting=true;const el=document.getElementById('count');el.style.display='grid';
+ let n=3;el.textContent=n;beep(500);
+ const id=setInterval(()=>{n--;if(n>0){el.textContent=n;beep(650)}else{el.textContent='GO!';beep(1000);setTimeout(()=>{el.style.display='none';counting=false;playing=true;clearInterval(id)},500)}},800);
+}
+function startRace(){
+ setupAudio();resetPositions();document.getElementById('start').style.display='none';document.getElementById('title').textContent='🏎️ 3D CAR RACER';document.getElementById('msg').textContent='';countdown();
+}
+function endRace(){
+ playing=false;finished=true;beep(900,.4);
+ const title=finishPosition===1?'🏆 YOU WIN!':'🏁 RACE FINISHED';
+ document.getElementById('title').textContent=title;
+ document.getElementById('msg').innerHTML='Position: <b>'+finishPosition+'/4</b><br>Time: <b>'+totalTime.toFixed(1)+'s</b><br>Press START RACE to play again.';
+ document.getElementById('startBtn').textContent='RACE AGAIN';document.getElementById('start').style.display='grid';
+}
+function crash(){
+ speed*=.45;beep(120,.18);
+}
+function update(dt){
+ if(counting)return;
+ totalTime+=dt;
+ let throttle=(keys.w||keys.ArrowUp)?1:0,brake=(keys.s||keys.ArrowDown)?1:0;
+ if(throttle)speed+=32*dt;else speed-=10*dt;
+ if(brake)speed-=38*dt;
+ speed=Math.max(0,Math.min(48,speed));
+ let steer=(keys.a||keys.ArrowLeft?-1:0)+(keys.d||keys.ArrowRight?1:0);
+ const turn=steer*(0.65+speed/70)*dt;
+ playerAngle+=turn;
+ const radius=midR+(keys.a||keys.d||keys.ArrowLeft||keys.ArrowRight?0:0);
+ const p=posOnTrack(playerAngle,radius);
+ player.position.x+= (p.x-player.position.x)*Math.min(1,dt*6);
+ player.position.z+= (p.z-player.position.z)*Math.min(1,dt*6);
+ player.rotation.y=-playerAngle;
+ if(!onRoad(player.position.x,player.position.z)){speed*=.985}
+ const diff=Math.abs(norm(playerAngle-lastAngle));
+ if(diff<Math.PI){if(lastAngle>2 && playerAngle<-2)lap++; if(lastAngle<-2 && playerAngle>2)lap++}
+ lastAngle=playerAngle;
+ if(lap>3){finishPosition=1;endRace();return}
+ // AI
+ ais.forEach((a,i)=>{
+   a.angle+=dt*(0.31+i*.018);
+   if(a.angle>Math.PI*2){a.angle-=Math.PI*2;a.lap++}
+   a.g.position.copy(posOnTrack(a.angle,midR-2+i*1.5));a.g.position.y=.01;
+   a.g.rotation.y=-a.angle;
+   if(a.lap>3&&!a.finished){a.finished=true;if(!finished){finishPosition++;}}
+ });
+ // collision
+ ais.forEach(a=>{if(player.position.distanceTo(a.g.position)<3){crash();player.position.x+=Math.sign(player.position.x-a.g.position.x||1)*.5}});
+ if(engineOsc&&soundOn)engineOsc.frequency.value=80+speed*9;
+ document.getElementById('sp').textContent=Math.round(speed*3.6);
+ document.getElementById('lap').textContent=Math.min(lap,3);
+ document.getElementById('time').textContent=totalTime.toFixed(1);
+ const order=ais.filter(a=>a.lap>lap).length;document.getElementById('pos').textContent=Math.min(4,1+order);
+ camera.position.lerp(new THREE.Vector3(player.position.x,7,player.position.z+11),.075);
+ camera.lookAt(player.position.x,0,player.position.z-5);
+}
+
+document.getElementById('startBtn').onclick=startRace;
+document.getElementById('nightBtn').onclick=setNight;
+document.getElementById('soundBtn').onclick=()=>{soundOn=!soundOn;document.getElementById('soundBtn').textContent=soundOn?'🔊 Sound ON':'🔇 Sound OFF';if(soundOn)setupAudio();else if(engineOsc)engineOsc.gain.gain.value=0};
+addEventListener('keydown',e=>{keys[e.key.toLowerCase()]=true;keys[e.key]=true;if(e.key.toLowerCase()==='r')startRace()});
+addEventListener('keyup',e=>{keys[e.key.toLowerCase()]=false;keys[e.key]=false});
+document.querySelectorAll('.ctrl').forEach(b=>{
+ const k=b.dataset.key;
+ b.addEventListener('pointerdown',e=>{e.preventDefault();keys[k]=true});
+ ['pointerup','pointercancel','pointerleave'].forEach(ev=>b.addEventListener(ev,e=>{e.preventDefault();keys[k]=false}));
+});
+
+const clock=new THREE.Clock();
+function loop(){requestAnimationFrame(loop);const dt=Math.min(clock.getDelta(),.035);if(playing)update(dt);renderer.render(scene,camera)}loop();
 addEventListener('resize',()=>{camera.aspect=innerWidth/innerHeight;camera.updateProjectionMatrix();renderer.setSize(innerWidth,innerHeight)});
-</script></body></html>
+</script>
+</body>
+</html>
